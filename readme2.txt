@@ -1,63 +1,66 @@
-Sub Click(Source As Navigator)
-	' 役職の定義
-	Dim posList List As Integer
-	posList("一般") = 0
-	posList("AM_SE") = 1
-	posList("M_CE") = 2
-	posList("SM") = 3
-	posList("役員") = 4
-	posList("その他") = 5
-	
-     ' 部門の定義
-	Dim deptList List As Integer
-	deptList("技術本部") = 0
-	deptList("営業本部") = 1
-	deptList("計器本部") = 2
-	deptList("その他") = 3
-	
-	' ユーザの役職を取得して変換
-	' 変換先は posList のタグ名に合わせること
-	userPos = "AM代行"
-	If userPos = "AM" Or userPos = "SE" Or userPos = "AM代行" Then
-		userPos = "AM_SE"
-	Elseif userPos = "M" Or userPos = "CE" Or userPos = "M代行" Then
-		userPos = "M_CE"
-	Else
-		userPos = "その他"
+%REM
+	Agent KeepPrivateCtrl
+	Created Feb 3, 2019 by John Doe/John Doe
+	Description: Comments for Agent
+%END REM
+Option Public
+Option Declare
+
+
+Sub Initialize
+	Dim uiwp As New NotesUIWorkspace
+	Dim retPassPrompt As Variant
+	retPassPrompt = uiwp.Prompt(PROMPT_PASSWORD, "pass", "pass")
+
+	If retPassPrompt = "dev38" Then
+		
+		Dim choiceList(3) As String
+		choiceList(0) = "1:check value"
+		choiceList(1) = "2:delete value"
+		choiceList(2) = "3:replace value to 0"
+		choiceList(3) = "4:replace value to 1"
+
+		Dim retListPrompt As Variant		
+		retListPrompt = uiwp.Prompt(PROMPT_OKCANCELLIST, "choice", "choice", choiceList(0), choiceList)
+
+		Dim session As New NotesSession
+		Dim db As NotesDatabase
+		Dim docs As NotesDocumentCollection
+		Dim doc As NotesDocument
+		
+		'カレントデータベースを設定する
+		Set db = session.CurrentDatabase
+		
+		'ビューから選択された文書を取得する
+		Set docs = db.UnprocessedDocuments
+
+		'全文書数分の繰り返し
+		Dim i As Long
+		For i = 1 To docs.Count
+			'GetNthDocument( i )は、i番目の文書を取得するという意味
+			'このときの文書の並びはデータベースに保存された順
+			Set doc = docs.GetNthDocument( i )
+			
+			If retListPrompt = "1:check value" Then
+				Dim title As Variant
+				Dim keepPrivate As Variant
+				title = doc.Getitemvalue("title")
+				keepPrivate = doc.Getitemvalue("$KeepPrivate")
+				MessageBox "title:" + title(0) + Chr$(13) + "hasItem:" + CStr(doc.Hasitem("$KeepPrivate")) + Chr$(13) +"$KeepPrivate:" + keepPrivate(0)
+
+			ElseIf retListPrompt = "2:delete value" Then
+				Call doc.Removeitem("$KeepPrivate")
+				Call doc.Save(False, False)
+
+			ElseIf retListPrompt = "3:replace value to 0" Then
+				Call doc.ReplaceItemValue("$KeepPrivate", "0")
+				Call doc.Save(False, False)
+
+			ElseIf retListPrompt = "4:replace value to 1" Then
+				Call doc.ReplaceItemValue("$KeepPrivate", "1")
+				Call doc.Save(False, False)
+
+			End If
+		Next
 	End If
-	' 全角半角も含める 役員も入れる
-	
-	' ユーザの所属部門を取得して変換
-	' 変換先は deptList のタグ名に合わせること
-	userDept = "第１開発部"
-	If userDept = "第１開発部" Or userDept = "第２開発部" Then
-		userDept = "開発本部"
-	Elseif userDept = "第１営業部" Or userDept = "第２営業部" Then
-		userPos = "営業本部"
-	Else
-		userPos = "その他"
-	End If
-	
-	' アクセス制御テーブルを作成
-	' 1番目の要素数は posList 、2番目の要素数は deptList 、それぞれの要素数に合わせること
-	' LotusScriptでは記述した要素数+1つの要素を持つ配列が作成される点に注意
-	' tmp(5) とした場合には tmp(0)～tmp(5) まで6つの要素を持つ
-	' そのため postList と deptList の最大値を指定すればよい
-	Dim acTable(5, 3) As Boolean
-	
-	' 記載漏れ防止のため False 出初期化
-	Forall ac In acTable
-		ac = False
-	End Forall
-	
-	' True:アクセス可能  False:アクセス不可
-	acTable("一般", "技術本部") = True
-	acTable("AM_SE", "技術本部") = True
-	acTable("M_CE", "技術本部") = True
-	acTable("SM", "技術本部") = True
-	acTable("SM", "技術本部") = True
-	
-	' この先に個別のアクセス制御を入れる
-	' 役員は↑では入れず、この先で定義
-	
 End Sub

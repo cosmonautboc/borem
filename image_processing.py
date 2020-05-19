@@ -1,4 +1,4 @@
-﻿from  PIL import Image
+from  PIL import Image
 import glob
 
 INPUT_FILE = "input.png"
